@@ -5,3 +5,5 @@ Exercises and code walks included in this repository are part of Udemy course "c
 https://www.udemy.com/course/concurrency-in-go-golang/?referralCode=5AE5A041D5793C048954
 
 
+# Notes: 
+
