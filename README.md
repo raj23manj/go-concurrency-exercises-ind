@@ -20,3 +20,6 @@ Goroutines:
    * Goroutines are extremly light weight. Goroutines starts with 2KB of stack, which grows and shrinks as required
    * Low cpu overhead - the amount cpu instruction to create a goroutine is 3 instructions per function call, this helps us to create 100 - 1000 gouroutines in the same address space
    * channels are used for communication of data between goroutines. Sharing of memory can be avoided.
+   * Context switching is much cheaper, as thread context switching is higher, as goroutines has less state to store.
+   * Go runtime can be more selective in what is persisted for retriveal, how it is persisted, and when the persisting needs to occur.
+   * Go runtimes creates OS threads, and Goroutines runs in the context of OS threads   => very imp
