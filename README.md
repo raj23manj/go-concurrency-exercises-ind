@@ -23,3 +23,5 @@ Goroutines:
    * Context switching is much cheaper, as thread context switching is higher, as goroutines has less state to store.
    * Go runtime can be more selective in what is persisted for retriveal, how it is persisted, and when the persisting needs to occur.
    * Go runtimes creates OS threads, and Goroutines runs in the context of OS threads   => very imp
+   * OS schedules the OS threads on to the processors, and go runtime schedules the go routines on the threads => very imp
+   * Many goroutines execute in the context of single OS threads.
