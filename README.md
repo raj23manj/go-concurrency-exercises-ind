@@ -5,11 +5,11 @@ Exercises and code walks included in this repository are part of Udemy course "c
 https://www.udemy.com/course/concurrency-in-go-golang/?referralCode=5AE5A041D5793C048954
 
 # Commands to run in cli:
-  run:
-      go run <file>.go
-  build and run:
-      go build
-      ./<folder> (see section 2: excercise 8, 3:22)
+  * run:
+      - go run <file>.go
+  * build and run:
+      - go build
+      - ./<folder> (see section 2: excercise 8, 3:22)
 
 
 
