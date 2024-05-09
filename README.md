@@ -7,3 +7,10 @@ https://www.udemy.com/course/concurrency-in-go-golang/?referralCode=5AE5A041D579
 
 # Notes: 
 
+Section 2:
+
+Go's concurrency ToolSet
+  * goroutines
+  * channels
+  * select
+  * sync package
