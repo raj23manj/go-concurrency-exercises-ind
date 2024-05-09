@@ -14,3 +14,9 @@ Go's concurrency ToolSet
   * channels
   * select
   * sync package
+
+Goroutines: 
+   * we can think go routines as user space threads managed by go runtime(it part of the executable).
+   * Goroutines are extremly light weight. Goroutines starts with 2KB of stack, which grows and shrinks as required
+   * Low cpu overhead - the amount cpu instruction to create a goroutine is 3 instructions per function call, this helps us to create 100 - 1000 gouroutines in the same address space
+   * channels are used for communication of data between goroutines. Sharing of memory can be avoided.
