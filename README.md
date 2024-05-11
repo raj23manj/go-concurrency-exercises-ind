@@ -73,7 +73,7 @@ Go's concurrency ToolSet
     - 01-goroutines
     - counting => using atomic.AddInt64 to add cumulative
 
-# GoRoutines & CLosures:
+# GoRoutines & Closures:
   - Goroutines execute within the same address space they are created in
   - They can directly modify variables in the enclosing lexical block
   - func inc() {
@@ -100,3 +100,16 @@ Go's concurrency ToolSet
     }
     wg.Wait()
   }
+
+# Go Scheduler(M:N scheduler):
+  - Go scheduler is part of Go runtime, go runtime is part of Go executable.
+  - Go scheduler runs on the user space
+  - Go scheduler uses OS threads to schedule goroutines for execution
+  - Goroutine runs in the context of OS threads
+  - Go runtime create number of worker OS threads, equal to GOMAXPROCS
+  - GOMAXPROCS - default value is number of processors on machine
+  - Go scheduler distributes runnable goroutines over multiple worker OS threads
+  - At any time, N goroutines could be scheduled on M OS threads that runs on at most GOMAXPROCS number of processors
+
+  ## Asynchronous Preemption:
+    - As of Go 1.14, Go scheduler implements asynchrounous preemtion
