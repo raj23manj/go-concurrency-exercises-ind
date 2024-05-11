@@ -125,6 +125,7 @@ Go's concurrency ToolSet
     - Once the I/O opereations(blocking operations) is completed, it is moved back to `Runnable` state
 
   ## M(OS threads):N(logical local processor) scheduler:
+    - Goruntine has mechanism called `MN` scheduler
     - For a cpu core GoRuntime creates a OS thread `M`, GoRoutine also creates a logical processor `P` and associates that with the OS thread `M`
     - The logical processor holds the context for scheduling which can be seen as a local scheduler running on a thread
     - `G` Represents the a goroutine running on the OS thread
@@ -152,3 +153,39 @@ Go's concurrency ToolSet
 
       ```
 
+  ## Context switch due to synchronous system call:
+    - what happens in general when synchrounous system call are made ? (like reading or writing to a file with sync flag set)
+      - There will be adisk I/O to be performed, so synchrounous system call wait for I/O operation to be completed.
+      - Due to this, the OS thread is moved out of CPU to waiting queue for I/O to complete, because of this we will not be able to schedule any goroutine on this thread for execution
+      - Implications, Synchronous system call reduces parallelism
+    - How does GO scheduler handles this scenario ?
+      - Below let us assume, `G1` is blocked due to I/O operation
+      - GOscheduler identifies that `G1` has caused `M1` to block, so it brings in a new OS thread either from the thread pool cache or it creates a new OS thread if there are no thread in the thread pool
+      - Then Go scheduler will detach the logical processor `P` from `M1` and attach it to the new thread `M2`, `G1` goroutine is still attached to the thread/processor `M1`
+      - Once the sync operation of `G1` is complete, Go scheduler moves it to the new thread `M2` on the logical processor `P` into the waiting queue
+      - `M1` thrad is put to sleep, and is put back into the thread pool cache, to be reused in the future for same scenario
+      ```
+      Scenario 1:
+      core
+      |
+      |
+      M1                                              M2
+      |-> G1(blocked due to I/O)
+      P ->(queue) G2, G3, G4
+
+      Scenario 2:
+                                                      core
+      M1 -> G1                                          |
+                                                        M2
+                                                        |
+                                                        P -> G3, G4
+
+      Scenario 3:
+
+                                                       core
+      M1                                                |
+                                                        M2
+                                                        | -> G3
+                                                        P -> G4, G1
+
+      ```
