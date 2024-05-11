@@ -112,4 +112,43 @@ Go's concurrency ToolSet
   - At any time, N goroutines could be scheduled on M OS threads that runs on at most GOMAXPROCS number of processors
 
   ## Asynchronous Preemption:
-    - As of Go 1.14, Go scheduler implements asynchrounous preemtion
+    - As of Go 1.14, Go scheduler implements asynchrounous preemption
+    - This prevents long running Goroutines from hogging onto CPU, that could block Goroutines
+    - THe asynchrounous preemption is triggered based on a time condition. WHen a goroutine is running for more than 10ms, Go will try to preempt it.
+
+  ## Goroutines states
+    - when created it is in `Runnable` state waiting in run queue
+    - Then moves to the `Executing` state once the goroutine is scheduled on the OS thread.
+    - If the goroutine takes more time(10ms), it is preempted and placed back on the run queue
+    - If the goroutine gets blocked, it moves to `Waiting` state
+      - goroutine gets blocked due waiting on channel, syscall, waiting for a mutex lock, I/O, event operation
+    - Once the I/O opereations(blocking operations) is completed, it is moved back to `Runnable` state
+
+  ## M(OS threads):N(logical local processor) scheduler:
+    - For a cpu core GoRuntime creates a OS thread `M`, GoRoutine also creates a logical processor `P` and associates that with the OS thread `M`
+    - The logical processor holds the context for scheduling which can be seen as a local scheduler running on a thread
+    - `G` Represents the a goroutine running on the OS thread
+    - Each logical processor `P` has a local run queue, where runnable goroutines are queued
+    - There is global run queue, once the logical processor exhausts it's queue, it pulls goroutines from global run queue
+    - When new goroutines are created there added to the end of the global run queue
+    ```
+    core
+      |                                 Global Run queue -> G10, G11
+      |
+      M
+      |-> G1(running)
+      P ->(queue) G2, G3, G4
+
+
+      Preemption: if G1 takes time, them preemption happens
+        - Here it is still the same OS thread, only goroutine is context switched.
+
+      core
+      |                                 Global Run queue -> G10, G11
+      |
+      M
+      |-> G2(running)
+      P ->(queue) G3, G4, G1
+
+      ```
+
