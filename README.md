@@ -23,7 +23,7 @@ Go's concurrency ToolSet
   * select
   * sync package
 
-Goroutines:
+#Goroutines:
    * we can think go routines as user space threads managed by go runtime(it part of the executable).
    * Goroutines are extremly light weight. Goroutines starts with 2KB of stack, which grows and shrinks as required
    * Low cpu overhead - the amount cpu instruction to create a goroutine is 3 instructions per function call, this helps us to create 100 - 1000 gouroutines in the same address space
@@ -34,7 +34,7 @@ Goroutines:
    * OS schedules the OS threads on to the processors, and go runtime schedules the go routines on the threads => very imp
    * Many goroutines execute in the context of single OS threads.
 
-Race Condition:
+#Race Condition:
   * Race condition occurs when the order of execution is not guaranteed
   * Concurrent Programs does not execute in the order they are coded(section 2, 9 waitGroups) => very imp.
       - Order of execution of the goroutines is not guaranteed, see below
@@ -67,3 +67,36 @@ Race Condition:
 
         }()
         wg.Wait() // blocks the main goroutine
+
+# Concurrent add
+  - 01-exercise-solution
+    - 01-goroutines
+    - counting => using atomic.AddInt64 to add cumulative
+
+# GoRoutines & CLosures:
+  - Goroutines execute within the same address space they are created in
+  - They can directly modify variables in the enclosing lexical block
+  - func inc() {
+    var i int
+    go func () {
+      i++ // here go moves the variable I from stach to heap so that goroutine can aceessit
+      fmt.Println(i)
+    }()
+    return
+  }
+  - Goroutine operates on the current value (excercise-closure02)
+    func main() {
+    var wg sync.WaitGroup
+
+    // what is the output
+    // fix the issue.
+
+    for i := 1; i <= 3; i++ {
+      wg.Add(1)
+      go func(i int) {
+        defer wg.Done()
+        fmt.Println(i)
+      }(i) // note imp, if we want go routine to operate on a specific value.
+    }
+    wg.Wait()
+  }
