@@ -189,3 +189,47 @@ Go's concurrency ToolSet
                                                         P -> G4, G1
 
       ```
+
+  ## Context switching due to Asynchronous system call(like network system call, http api call)
+    - what happens in general when asynchrounous system call are made ?
+      - Asynchronous call happens when the File descriptor that is used to do I/O operation is set to non-blocking mode
+      - If the file descriptor that is not ready, (if scoket buffer is empty, and we are trying to read from it  or the socket buffer is full and we are trying to write to it, then the read/write operations does not block but returns error) for I/O operation system call does not block, but returns error. The application has to retry the operation at a later poin in time.
+      - Asynchronous IO increases the application complexity.
+      - Application havs to create a event loop. (Setup event loops using callbacks functions)
+    - How does go handles this situation ?
+      - netpoller
+        - Go uses netpoller, there is abstraction in Syscall package.
+        - Syscall uses netpoller to convert async system call to blocking system call
+        - when a goroutine makes a async system call, and the file descriptor is not ready, then the Go scheduler uses netpoller OS thread to part that goroutine
+        - Netpoller uses the interface provided by OS (Kqueue(mac), epoll(linux), iocp(win)) to poll on the file descriptor
+        - Once the netpoller gets the notification from the OS, when the file descriptor is ready for I/O operation
+        - Netpoller notifies the goroutine to retry the I/O operation
+        - This way, Complexity os managing async system call is moved from application to GO runtime, which manages it efficiently.
+        - For async calls, noextra threads are used like sync calls, but uses exisiting netpoller thread instead
+        ```
+
+         Scenario 1:
+         core
+          |
+          M1                                              Netpoller
+          |-> G1(makes I/O call)
+          P ->(queue) G2, G3, G4
+
+         Scenario 2:
+         core
+          |
+          M1                                              Netpoller (uses interfacr provided from OS to poll on the file descriptor,
+                                                          if it receives a notification that a file descriptor is available,
+                                                          it looks on it its datastructure if any goroutine needs it to execute)
+          |-> G2                                              |
+          P ->(queue) G3, G4                                  G1
+
+
+        Scenario 3:
+         core
+          |
+          M1                                              Netpoller
+          |-> G2
+          P ->(queue) G3, G4,G1
+
+        ```
