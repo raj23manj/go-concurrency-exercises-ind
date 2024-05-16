@@ -18,6 +18,6 @@ func main() {
 	// go demo(1,2)
 
 	// get the value computed from goroutine
-	c := <-ch
-	fmt.Printf("computed value %v\n", c)
+	r := <-ch
+	fmt.Printf("computed value %v\n", r)
 }
