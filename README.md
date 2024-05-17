@@ -460,3 +460,49 @@ Go's concurrency ToolSet
               | -> queue
             |4|3|2|  => deques 1 and pops G1 from sendq and enques the value 4
             ```
+        - Buffer Empty Scenario:
+          - Scenario: G2 tries to recv on empty channel
+            ```
+              ch := make(chan int, 3)
+
+              // G1 - goroutine
+              func G1(ch chan <- int) {
+                for _, v := range []int{1, 2, 3, 4} {
+                  ch <- v
+                }
+              }
+
+              // G2 - goroutine
+              func G2(ch <-chan int) {
+                for v := range ch {
+                  fmt.Println(v)
+                }
+              }
+            ```
+          - Explantion:
+            - G2 creates itself a sudog struct `G` pointing to G2, with elem poniting to `v` and enqueues it in the `recvq` of hchan struct of the channel
+            - G2 calls upon the scheduler using `gopark()` and the scheduler will move G2 out of the OS thread and does a context switching, and scheduler the next go routinr from the local run queue to the OS thread
+            - Now `G1` comes and tries to send a value on the channel, first it checks if there are any goroutines waiting in the `recvq` of the channel, and it finds G2
+            - Now G1 copies the value directly into the variable of G2 stack. `G1 is directly accessing the stack of v2, and writing into the variable of g2 stack`. This is the only scenario where one goroutine access the stack of another goroutine.
+            - Then G1 pops G2 from the recvq and puts G2 into local run queue by making it runnable state, by calling the goready(G2)
+            ```
+             `G2`
+                                        G2   v
+                                        |    |
+                                      | G | elem | | => sudog
+                                        |
+            |buf|lock|sendx|recvx|senq|recvq|...|
+              | -> queue
+            | | | |  => empty
+
+
+            `G1`
+            ch <- 1
+
+                 G1
+                 | (copies 1 to v)
+            G2|v(stack)|||
+
+            ```
+
+        - Unbuffered channel
