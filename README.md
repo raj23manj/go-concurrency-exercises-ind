@@ -400,7 +400,7 @@ Go's concurrency ToolSet
 
     ### Channels Deep Dive
       - Buffered channels
-        - A hchan struct has
+        - A hchan struct has below, hchan struct represents a channel
         ```
             |buf|lock|sendx|recvx|...|
               | -> queue
