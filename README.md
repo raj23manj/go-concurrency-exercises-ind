@@ -18,13 +18,18 @@
   * Used docker desktop & psql image for local development, techschool
 
 # Go Tools
-  * https://dbdiagram.io/home => for designing db with schema, use export to generate sql code postgres, msql etc
-  * https://dbml.dbdiagram.io/docs/
+  ## online schema generation
+    * https://dbdiagram.io/home => for designing db with schema, use export to generate sql code postgres, msql etc
+    * https://dbml.dbdiagram.io/docs/
+
+  ## golang-migrate(migration tools) like flyway
+    -  brew install golang-migrate
+
 
 # Go Projects
   ## Tech school
     - https://github.com/techschool/simplebank
-    - mydevelopment =>
+    - mydevelopment => https://github.com/raj23manj/techshool-go
 
 # Go concurrency exercises
 
