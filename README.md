@@ -526,3 +526,23 @@ Go's concurrency ToolSet
             - Reference to variable is saved in elem field in sudog struct
             - When sender comes along, it copies the data directly to the receiver stack variable.
             - Puts the receiver to runnable state
+
+# Select
+
+# Sync Package
+
+# Race Detector
+
+# Web Crawler
+
+# Concurrency Patterns
+
+# image processing pipeline
+
+# context Package
+
+# Http Server Timeouts with Context package
+
+# Interfaces
+
+# Generics
