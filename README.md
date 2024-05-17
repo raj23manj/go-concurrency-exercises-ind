@@ -1,3 +1,31 @@
+# GOPATH
+  * go env GOPATH
+  * To edit, vi ~/.bash_profile (normal) / vi ~/.zshrc
+  * use source ~/.bash_profile (try for zhrc also) to load in current terminal window
+  * Config from tech school
+    ```
+      export PATH=$PATH:$(go env GOPATH)/bin
+    ```
+  * Config exisiting:
+    ```
+      export GOROOT=/usr/local/go
+      export GOPATH=/Users/rajeshmanjunath/Projects/go-lang/goworkspace
+      export PATH=$GOPATH/bin:$PATH
+      export GO111MODULE=auto
+      export GOBIN=/Users/rajeshmanjunath/Projects/go-lang/goworkspace/bin
+      export PATH=$GOBIN/bin:$PATH
+    ```
+  * Used docker desktop & psql image for local development, techschool
+
+# Go Tools
+  * https://dbdiagram.io/home => for designing db with schema, use export to generate sql code postgres, msql etc
+  * https://dbml.dbdiagram.io/docs/
+
+# Go Projects
+  ## Tech school
+    - https://github.com/techschool/simplebank
+    - mydevelopment =>
+
 # Go concurrency exercises
 
 Exercises and code walks included in this repository are part of Udemy course "concurrency in Go (Golang)".
