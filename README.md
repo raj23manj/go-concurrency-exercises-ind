@@ -397,3 +397,66 @@ Go's concurrency ToolSet
             }
 
           ```
+
+    ### Channels Deep Dive
+      - Buffered channels
+        - A hchan struct has
+        ```
+            |buf|lock|sendx|recvx|...|
+              | -> queue
+            | | | |
+        ```
+        - A channel struct has a lock(mutex), buf(buffer). A goroutine needs to acuire the lock on the channel first
+        - The sender(G1) first acquires the lock on the hchan struct, then adds elemenst and increments sendx and releases the lock and proceeds with its other computation.
+        - THe receiver(G2) if wants to receive for the same channel, it acquires the lock first, dequeues(copies the value from queue into it's local variable) the value and increments recvx and releases the lock
+        - Channel Idoms:
+          - There is no memory share between goroutines
+          - Goroutines copy elements into from hchan
+          - hchan is protected by mutex lock
+          - "Do not communicate by sharing memory, instead share memory by communicating"
+        - Buffer full scenario:
+          - example:
+          ```
+            `G1`
+
+            make(chan int, 3)
+            for _, v := range []int{1,2,3,4} {
+              ch <- v
+            }
+
+            hchan:
+            * scenario 1
+            ch <- 4 => waits
+
+            |buf|lock|sendx|recvx|senq|recvq|...|
+              | -> queue
+            |3|2|1|  => channel buffer full, G1 has to wait for the receiver
+           ```
+          - How does G1 wait happen for the above scenatio?
+            - G1 creates a `sudog` struct say `G`
+            - This struct will hold the reference of the executing Goroutine `G1`, the next value to sent will be saved in the `elem` field
+            - This structure is enqueded in the sendq list
+            - example:
+            ```
+                                  G1   4
+                                  |    |
+                                | G | elem | | => sudog
+                                    |
+            |buf|lock|sendx|recvx|senq|recvq|...|
+              | -> queue
+            |3|2|1|  => full
+            ```
+            - Now G1 calls `gopark()`, the scheduler will move `G1` out of execution on the OS thread, and other Go routine from the local run queue gets scheduled to run on the OS thread say `G2`
+            - Now G2 comes, to dequeue the element from the channel, it dequeues the element and copies it into its local variable, and pops the
+              waiting `G1` on the `sendq` and enqueues the value(4) saved in the `elem` field (into the buffer), once this is done, G2 sets the sate of G1 runnable, this is done G@ calling goready function for G1, the G1 gets moved to the runnable state and gets added to the local run queue for execution
+            - example:
+            ```
+            `G2`
+                                  G1   4
+                                  |    |
+                                | G | elem | | => sudog
+
+            |buf|lock|sendx|recvx|senq|recvq|...|
+              | -> queue
+            |4|3|2|  => deques 1 and pops G1 from sendq and enques the value 4
+            ```
