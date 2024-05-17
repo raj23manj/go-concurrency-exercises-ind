@@ -506,3 +506,23 @@ Go's concurrency ToolSet
             ```
 
         - Unbuffered channel
+          - Send on unbuffered channel
+            - when sender goroutine wants to send values
+            - if there is corresponding receiver waiting in recvq
+            - sender write the value directly into receiver goroutine stack variable
+            - sender goroutine puts the receiver goroutine back to runnable state
+            - if there is no receiver goroutine in the sendq
+            - sender gets parked into sendq
+            - data is saved in elem field in sudog struct
+            - when receiver comes along, it copies the data
+            - puts the sender back to runnable state
+          - Receive on unbuffered channel
+            - Receiver goroutine wants to receive value
+            - if it find a goroutine in wainting in sendq
+            - receiver copies the value in elem field to its variable
+            - puts the sender goroutine to runnable state
+            - if there is no sender goroutine in send q
+            - Receiver gets parked into recvq
+            - Reference to variable is saved in elem field in sudog struct
+            - When sender comes along, it copies the data directly to the receiver stack variable.
+            - Puts the receiver to runnable state
