@@ -561,6 +561,98 @@ Go's concurrency ToolSet
             - Puts the receiver to runnable state
 
 # Select
+  * Scenario:
+    - G1 wants to receive result of computatuion from G2 and G3
+      ```
+         G1 <---- G2
+          ^
+          |
+          |
+          G3
+      ```
+    - in what order are we going to receive results ?
+      * from G2 the G3 or G3 then G2
+    - What if G# was much faster than G2 in one instance, and G2 is fater than G3 in another ?
+    - Can we do the operation on channel which ever is ready, without considering the order of the results?
+    - select statement is like a switch
+      ```
+        select {
+          case <-ch1:
+               // block of statements
+          case <-ch2:
+               // block of statements
+          case <-ch3 <- struct{}{}:
+               // block of statements
+        }
+      ```
+    - In select, all channel operations are considered simultaneously
+    - select waits until some case is ready to proceed, if none of them are ready, then the entire select statement is going to block, until some case is ready
+    - when one of the channel is ready, that operation will proceed immediately
+    - if multiple channels are ready, main goroutine will pick one of them and execute at random
+    - Select is very helpful in implementing
+      * Timeouts
+        ```
+          Timeout waiting on channel
+
+          select {
+            case v := <-ch:
+              fmt.println(v)
+            case <- timeAfter(3 * time.Second):
+              fmt.Println("timeout")
+          }
+
+          - select waits until there is a event on channel ch or until timeout is reached
+          - The time.After function takes in a time.Duration argument and returns a channel that will send the current time after the duration you provide it
+        ```
+
+      * Non-blocking communications
+        ```
+          select {
+            case v := <-ch:
+              fmt.println(v)
+            default:
+              fmt.Println("no msg rcvd")
+          }
+
+          - send or receive on a channel, but avoid blocking if channel is not ready
+          - Default allows you to exit select block without blocking
+
+          - non blocking:
+            // if there is no value on channel, do not block.
+            for i := 0; i < 2; i++ {
+              select {
+              case m := <-ch:
+                fmt.Println(m)
+              default:
+                fmt.Println("no message received")
+              }
+              // Do some processing..
+              fmt.Println("processing..")
+              time.Sleep(1500 * time.Millisecond)
+            }
+
+          - see exmaple code
+            for i := 0; i < 2; i++ {
+              select {
+              case msg1 := <-ch1:
+                fmt.Println(msg1)
+              case msg2 := <-ch2:
+                fmt.Println(msg2)
+              }
+            }
+        ```
+
+      * Empty select
+        - select {}
+        - this will block for ever
+        - select on nil channel will block forever.
+        ```
+          var ch chan string
+          select {
+            case v := <-ch:
+            case ch <- v:>>
+          }
+        ```
 
 # Sync Package
 
