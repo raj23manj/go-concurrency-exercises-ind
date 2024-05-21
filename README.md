@@ -654,7 +654,48 @@ Go's concurrency ToolSet
           }
         ```
 
-# Sync Package
+# Sync Package(apart from wait group)
+  - Mutex
+    * when to use channels and whe to use mutex
+      * channels: used to pass inbetween goroutines
+        * passing copy of data
+        * distributing unit of work
+        * Communicating asynchrounous results
+      * Mutex: when data is large and can't be passed using channels
+        * caches
+        * states
+        * access to these data must be cocnurrent safe, so that only one goroutine has access to the data at a time
+    * Mutex is used to protect shared resources
+    * sync.Mutex - provides exclusive access to shared resources
+    * section between lock() and unlock() is called as `critical section`
+    * example
+      ```
+        mu.Lock()
+        balance +=amount
+        mu.Unlock()
+
+        mu.Lock()
+        defer mu.Unlock()
+        balance -= amount
+      ```
+    * if goroutine only wants to read or write then we can use sync.RwMutex. Allows multiple readers, but writers get exclusive lock
+      ```
+        // write exclusive lock
+        mu.Lock()
+        balance +=amount
+        mu.Unlock()
+
+        // read lock, multiple goroutines can access
+        mu.RLock()
+        defer mu.RUnlock()
+        return balance
+      ```
+
+
+  - Atomic
+  - Conditional variable
+  - Sync Once
+  - Sync pool
 
 # Race Detector
 
