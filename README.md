@@ -870,7 +870,7 @@ Go's concurrency ToolSet
 
       example:
 
-      // create pool of bytes.Buffers which can be reused.
+      // create pool of bytes.Buffers which can be reused. here creating only one instance
       var bufPool = sync.Pool{
         New: func() interface{} {
           fmt.Println("allocate new bytes.Buffer")
