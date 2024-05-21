@@ -691,10 +691,152 @@ Go's concurrency ToolSet
         return balance
       ```
 
-
   - Atomic
+    * Low level atomic operations on memory
+    * Lockless operation
+    * Used for atomic operations on counters
+    * example
+    ```
+      atomic.AddUint64(&ops,1)
+      value := atomic.LoadUint64(&ops)
+    ```
+
   - Conditional variable
+    * Conditional Variable is one of the synchronization mechanisms
+    * A condition variable is basically a container of Goroutines that are waiting for a certain condition
+    * How to make a goroutine wait till some event(condition) occurs?
+      - one way - wait in a loop for condition
+        ```
+          var sharedRsc = make(map[string]string)
+          go func() {
+            defer wg.Done()
+            mu.Lock()
+            for len(sharedRsc) == 0 {
+              mu.Unlock()
+              time.Sleep(100 * time.Millesecond)
+              mu.Lock()
+            }
+            // Do processing
+            fmt.Println(sharedRsc["rsc"])
+            mu.Unlock()
+          }()
+
+          this is inefficient
+        ```
+      - We need some way to make goroutine suspend while waiting
+      - we need some way to signal the suspended goroutine when particular event has occured
+      - sync.Cond
+        * conditional variable are type
+          - var c *sync.Cond
+        * we use constructor method sync.NewCond() to create a conditional varaible, it takes sync.Locker interface as input, which is usually sync.Mutex
+          ```
+            m := sync.Mutex{}
+            c := sync.NewCond(&m)
+          ```
+        * sync.Cond method has three methods
+          - c.Wait()
+            * example:
+            ```
+              c.L.Lock()
+              for !condition() {
+                c.Wait()
+              }
+              .... make use of condtion ....
+              c.L.Unlock()
+            ```
+            * wait method suspends the execution of the calling goroutine
+            * it automatically unlocks c.L, before suspending the goroutine
+            * wait() cannot return unless awoken by BroadCast or Signal
+            * Once woken up, it acquires the lock(c.L) again
+            * Because c.L is not locked when wait first resumes, the caller typically cannot assume that the condition is true when wait returns(as another go routine might have interfered). Instead, the called should wait in a loop
+
+          - c.Signal()
+            * Signal wakes up one goroutine waiting on c (condition), if there is any
+            * Signal finds goroutine that has been waiting the longest and notofies that
+            * it is allowed but not required for the caller to hold c.L during the call
+
+          - c.Broadcast()
+            * Broadcast wakes all the goroutines wainting on c(condition)
+            * it is allowed but not required for the caller to hold c.L guring the call
+
+          - example
+          ```
+          Scenario  1: (using wait and signal)
+                    | G2 | => Consumer
+
+                m := sync.Mutex{}
+                c := sync.NewCond(&m)
+                var sharedRsc = make(map[string]string)
+                go func() {
+                  defer wg.Done()
+                  c.L.Lock()
+                  for len(sharedRsc) == 0 {
+                    c.Wait() // goroutine is suspended and waits
+                  }
+                  // Do processing
+                  fmt.Println(sharedRsc["rsc"])
+                  c.L.Unlock()
+                }()
+
+
+                    |G1| => Producer(signaling)
+
+                go func() {
+                  defer wg.Done()
+                  c.L.Lock()
+                  sharedRsc["rsc"] = "foo"
+                  c.Signal()
+                  c.L.Unlock()
+                }()
+
+          Scenario 2: (using wait & braodcast, with multiple goroutines)
+                    | G2 | => Consumer
+
+                m := sync.Mutex{}
+                c := sync.NewCond(&m)
+                var sharedRsc = make(map[string]string)
+                go func() {
+                  defer wg.Done()
+                  c.L.Lock()
+                  for len(sharedRsc) < 1 {
+                    c.Wait() // goroutine is suspended and waits
+                  }
+                  // Do processing
+                  fmt.Println(sharedRsc["rsc1"])
+                  c.L.Unlock()
+                }()
+
+                    | G3 | => Consumer
+
+                m := sync.Mutex{}
+                c := sync.NewCond(&m)
+                var sharedRsc = make(map[string]string)
+                go func() {
+                  defer wg.Done()
+                  c.L.Lock()
+                  for len(sharedRsc) < 2 {
+                    c.Wait() // goroutine is suspended and waits
+                  }
+                  // Do processing
+                  fmt.Println(sharedRsc["rsc2"])
+                  c.L.Unlock()
+                }()
+
+                 |G1| => Producer(broad casting)
+
+                go func() {
+                  defer wg.Done()
+                  c.L.Lock()
+                  sharedRsc["rsc1"] = "foo"
+                  sharedRsc["rsc2"] = "foo"
+                  c.BroadCast() // signals all goroutines
+                  c.L.Unlock()
+                }()
+          ```
+
   - Sync Once
+
+
   - Sync pool
 
 # Race Detector
