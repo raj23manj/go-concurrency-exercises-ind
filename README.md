@@ -835,9 +835,67 @@ Go's concurrency ToolSet
           ```
 
   - Sync Once
+    * Run one time initialization functions
+    * sync.Once ensures that only one
+    * example
+    ```
+      var wg sync.WaitGroup
 
+    var once sync.Once
+
+    load := func() {
+      fmt.Println("Run only once initialization function")
+    }
+
+    wg.Add(10)
+    for i := 0; i < 10; i++ {
+      go func() {
+        defer wg.Done()
+
+        //TODO: modify so that load function gets called only once.
+        once.Do(load)
+      }()
+    }
+    wg.Wait()
+    ```
 
   - Sync pool
+    * sync.Pool
+    * create and make avaliable pool of things for use
+    ```
+      // retrive existing instance or create new instance and return
+      b := bufPool.Get().(*bytes.Buffer)
+      // release the instance once work done
+      bufPool.Put(b)
+
+      example:
+
+      // create pool of bytes.Buffers which can be reused.
+      var bufPool = sync.Pool{
+        New: func() interface{} {
+          fmt.Println("allocate new bytes.Buffer")
+          return new(bytes.Buffer)
+        },
+      }
+
+      func log(w io.Writer, val string) {
+        b := bufPool.Get().(*bytes.Buffer)
+        b.Reset()
+
+        b.WriteString(time.Now().Format("15:04:05"))
+        b.WriteString(" : ")
+        b.WriteString(val)
+        b.WriteString("\n")
+
+        w.Write(b.Bytes())
+        bufPool.Put(b)
+      }
+
+      func main() {
+        log(os.Stdout, "debug-string1")
+        log(os.Stdout, "debug-string2")
+      }
+    ```
 
 # Race Detector
 
