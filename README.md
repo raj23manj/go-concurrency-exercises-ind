@@ -898,6 +898,38 @@ Go's concurrency ToolSet
     ```
 
 # Race Detector
+  * Go provides race decetor tool for finding race conditions in GO code.
+  ```
+    $ go test -race mypkg // test the package
+    $ go run -race mysrc.go // compile and run the program
+    $ go build -race mycmd // build the command
+    $ go install -race mypkg // install the package
+  ```
+  * Binary needs to be race enabled
+  * when racy behaviour is detedtec a warning is printed
+  * Race enabled binary will be 10 times slower and consume 10 times more memory
+  * Integration tests and load tests are good candidates to test with binary wuth race condition
+  * Alwyas check ig inbuilt functions are run in a seperate gor-routine or in custom ones also, if so then use channels to communicate data. Read and write to shared data must be done in the main goroutine. see example below
+  * example - using timer function, it runs in a seperate goroutine
+  ```
+    func main() {
+    start := time.Now()
+    reset := make(chan bool)
+    var t *time.Timer
+    t = time.AfterFunc(randomDuration(), func() {
+        fmt.Println(time.Now().Sub(start))
+        reset <- true
+      })
+      for time.Since(start) < 5*time.Second {
+        <-reset
+        t.Reset(randomDuration())
+      }
+    }
+
+    func randomDuration() time.Duration {
+      return time.Duration(rand.Int63n(1e9))
+    }
+  ```
 
 # Web Crawler
 
