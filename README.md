@@ -932,8 +932,61 @@ Go's concurrency ToolSet
   ```
 
 # Web Crawler
+  * see example for cuncurrent code
 
 # Concurrency Patterns
+  * Pipelines
+    * Process streams or batches of data
+      - G1 -> G2 -> G3   (ch on each ->)
+    * each go routien is a stage, each stage takes data in, perform an operation on it and send the data out
+    * Stages:
+      * seperate the concerns of each stage
+      * process individual stage concurrently
+      * A stage could consume and return the same type
+        - ex: `func square(in <-chan int) <-chan int{}`
+      * this enables composability of pipeline
+        - `square(suqre(generator(2,3)))`, assume generator returns `<-chan int`
+      * example:
+        ```
+        func generator(nums ...int) <-chan int {
+        out := make(chan int)
+        go func() {
+            for _, n := range nums {
+              out <- n
+            }
+            close(out)
+          }()
+          return out
+        }
+
+        func square(in <-chan int) <-chan int {
+          out := make(chan int)
+          go func() {
+            for n := range in {
+              out <- n * n
+            }
+            close(out)
+          }()
+          return out
+        }
+
+        func main1() {
+          ch := generator(2,3)
+          out := square(ch)
+
+          for n := range out {
+            fmt.Println(n)
+          }
+        }
+
+        func main2() {
+
+          for n := square(generator(2,3)) {
+            fmt.Println(n)
+          }
+        }
+
+        ```
 
 # image processing pipeline
 
