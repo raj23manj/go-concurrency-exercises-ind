@@ -1158,17 +1158,25 @@ Go's concurrency ToolSet
           }
 
           func main() {
-            done := make(chan struct{})
-            defer close(done)
+            done := make(chan struct{}) // we use struct{} to send only close signal and not sen any data
+            //defer close(done) // cancel gouroutine after recieving one value
 
-            in := generator(done, 2, 3)
+            in := generator(done, 2, 3) // go idiom to pass done channel firsr
 
             c1 := square(done, in)
             c2 := square(done, in)
 
             out := merge(done, c1, c2)
 
+            // TODO: cancel gouroutine after recieving one value
+
             fmt.Println(<-out)
+            close(done) // cancel gouroutine after recieving one value
+
+            time.Sleep(10 * time.Millisecond) // wait for sometime until all goroutines terminate
+            // o/p only 4
+            g := runtime.NumGoroutines()
+            fmt.Print("no of Goroutines = %d\n", g) // o/p is 1
           }
 
           // guidelines for pipeline construction
