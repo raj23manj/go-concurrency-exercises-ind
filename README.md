@@ -1069,6 +1069,115 @@ Go's concurrency ToolSet
       }
       ```
 
+  * Cancelling Goroutines
+    * In the previous example, we use `close(out)`, `range` in each go routine to indicate work is done and to loop over the values sent from upstream. Similarly we need to wait until all the values are received.
+    * In real pipelines:
+      * Receiver stages may only need a subset of values to make progress
+      * A stage can exit early because an inbound value represents an error in an earlier stage
+      * Receiver should not have to wait for the remaining values to arrive
+      * we want earlier stages to stop producing values that later stages don't need
+    * How to signal goroutine to abandon/terminate what they are doing?
+      * Cancellation of goroutines
+        * Pass a read-only `done` channel to goroutine
+        * close the channel, to send broadcast signal to all goroutine
+        * On receiving the signal on done channel, GOroutines needs to abandon their work and terminate.
+        * we use `select` to make send/receive operation on channel pre-emptible, by multiplexing on done receive channel
+        ```
+          select {
+            case out <- n:
+            case <-done:
+              return
+          }
+        ```
+        * example:
+        ```
+          package main
+
+          import (
+            "fmt"
+            "sync"
+          )
+
+          func generator(done <-chan struct{}, nums ...int) <-chan int {
+            out := make(chan int)
+
+            go func() {
+              defer close(out)
+              for _, n := range nums {
+                select {
+                case out <- n:
+                case <-done:
+                  return
+                }
+              }
+
+            }()
+            return out
+          }
+
+          func square(done <-chan struct{}, in <-chan int) <-chan int {
+            out := make(chan int)
+            go func() {
+              defer close(out)
+              for n := range in {
+                select {
+                case out <- n * n:
+                case <-done:
+                  return
+                }
+              }
+            }()
+            return out
+          }
+
+          func merge(done <-chan struct{}, cs ...<-chan int) <-chan int {
+            out := make(chan int)
+            var wg sync.WaitGroup
+
+            output := func(c <-chan int) {
+              defer wg.Done()
+              for n := range c {
+                select {
+                case out <- n:
+                case <-done:
+                  return
+                }
+              }
+            }
+
+            wg.Add(len(cs))
+            for _, c := range cs {
+              go output(c)
+            }
+
+            go func() {
+              wg.Wait()
+              close(out)
+            }()
+            return out
+          }
+
+          func main() {
+            done := make(chan struct{})
+            defer close(done)
+
+            in := generator(done, 2, 3)
+
+            c1 := square(done, in)
+            c2 := square(done, in)
+
+            out := merge(done, c1, c2)
+
+            fmt.Println(<-out)
+          }
+
+          // guidelines for pipeline construction
+
+          // stages close their outbound channels when all the send operations are done.
+          // stages keep receiving values from inbound channels until those channels are closed or the senders are unblocked.
+
+        ```
+
 # image processing pipeline
 
 # context Package
