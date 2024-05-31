@@ -987,6 +987,87 @@ Go's concurrency ToolSet
         }
 
         ```
+    * Fan-out & Fan-in
+      * example:
+      ```
+               |------> G2a ---> Ma ----|
+          G1 ---------> G2b ---> Ma --------G3---->G4
+               |------> G2c ---> Ma ----|
+
+               Ma -> merge goroutines
+
+      ```
+      * Fan-out:
+        * Multiple goroutines are started to read data from the single channel
+        * Distribute work amongst a group of workers goroutines to parallellize the cpu usage and the I/O usage
+        * Helps computational intensive stage to run faster
+      * Fan-in:
+        * process of combining multiple results into one channel
+        * we create merge goroutines, to read data from multiple input channels and send data data to a single output channel
+      * example :
+      ```
+        package main
+
+        import (
+          "fmt"
+          "sync"
+        )
+
+        func generator(nums ...int) <-chan int {
+        out := make(chan int)
+        go func() {
+          for _, n := range nums {
+            out <- n
+          }
+          close(out)
+        }()
+        return out
+      }
+
+      func square(in <-chan int) <-chan int {
+        out := make(chan int)
+        go func() {
+          for n := range in {
+            out <- n * n
+          }
+          close(out)
+        }()
+        return out
+      }
+
+      func merge(cs ...<-chan int) <-chan int {
+        out := make(chan int)
+        var wg sync.WaitGroup
+
+        output := func(c <-chan int) {
+          for n := range c {
+            out <- n
+          }
+          wg.Done()
+        }
+
+        wg.Add(len(cs))
+        for _, c := range cs {
+          go output(c)
+        }
+
+        go func() {
+          wg.Wait()
+          close(out)
+        }()
+        return out
+      }
+
+      func main() {
+        in := generator(2, 3)
+
+        c1 := square(in) // fan-out
+        c2 := square(in) // fan-out
+
+        out := merge(c1, c2) // fan-in
+        fmt.Println(<-out)
+      }
+      ```
 
 # image processing pipeline
 
