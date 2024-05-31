@@ -1187,8 +1187,13 @@ Go's concurrency ToolSet
         ```
 
 # image processing pipeline
+  * see video, and example
 
 # context Package
+  * In a go service each incoming request is handled in its own goroutine
+  * The spawned request goroutines starts other goroutines to access database, rpc calls etc
+  * The set of goroutines working together needs access to request specific values, i,e identity of the end user, authorization tokens and request deadline
+  * when the request is cancelled by the end user or the request is timedout we want all the group of goroutines working on the request to also cancel or exit quickly
 
 # Http Server Timeouts with Context package
 
