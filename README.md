@@ -1194,6 +1194,36 @@ Go's concurrency ToolSet
   * The spawned request goroutines starts other goroutines to access database, rpc calls etc
   * The set of goroutines working together needs access to request specific values, i,e identity of the end user, authorization tokens and request deadline
   * when the request is cancelled by the end user or the request is timedout we want all the group of goroutines working on the request to also cancel or exit quickly
+  * Need for context:
+    - we need a way to propogate request-scoped data down the call graph
+    - we need a way to propogate cancellation signal down the call graph
+    - Context package provides API's for cancelling branches of call graph
+    - Context package provides a data-bag for transporting request-scoped data through call-graph
+  * Context interface
+    ```
+      type context interface {
+        // Done returns a channel that is closed when this context is cancelled or times out
+        Done() <- struct
+        // Err indicates why this context was cancelled, after the done channel is closed
+        Err()
+        // Deadline returns the time when this context will be cancelled, if any.
+        Deadline() (deadline time.Time, ok bool)
+        // value returns the value associated with key or nil if none
+        Value(key interface{}) interface{}
+      }
+    ```
+  * A context is safe for simultaneous use by multiple goroutines. We can pass a single context to any number of goroutines and send a cancel signal to all go routines to abandon their work and terminate.
+  * Functions provided by context
+    - context.Background()
+      * returns a empty context
+      * it is the root of any context tree
+      * it is never cancelled and no value and has no deadline
+      * It is typically used by main function
+      * Acts as a top level context for incoming request
+    - context.Todo()
+      * It returns a empty context
+      * Todo's intended purpose is to serve as a placeholder
+      * it is used when we don't know which context to utilize
 
 # Http Server Timeouts with Context package
 
