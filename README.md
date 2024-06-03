@@ -1224,6 +1224,46 @@ Go's concurrency ToolSet
       * It returns a empty context
       * Todo's intended purpose is to serve as a placeholder
       * it is used when we don't know which context to utilize
+  * Context Package ... Cancellation
+    * Context is immutable
+    * Context package provides functions to add new behaviour
+    * To add cancellation behaviour we have function like, these functions generate new instance of the context and add options relative to the behaviour of these functions.
+      - context.WithCancel()
+        ```
+          * takes parent context as the input
+          ctx, cancel := context.WIthCancel(context.Background())
+          defer cancel()
+          * WithCancel returns a copy of parent with a new Done channel and a cancel function. The cancel function is used to close context's done channel
+          * Closing the done channel indicates to an operation to abandon its work and return
+          * Cancelling the context releases the resources associated with it
+          * It is important to call the cancel() function as soon as the operation is complete, if we don't call teh cancel function then their will be a memory leak. The resources won't be freed until the current contex is cancelled or the parent context is cancelled
+          * cancel() function does not wait for the operation to stop, it just closes the done channel and returns
+          * cancel() function can be called from multiple goroutines simultaneously, after the first call to cancel() the subsequent call does nothing to cancel()
+
+          example:
+
+          ctx, cancel := context.WithCAncel(context.Background())
+          ch := generator(ctx)
+          ...
+          if n == 5 {
+            cancel()
+          }     // parent goroutine
+
+
+          child: gorouitne:
+
+          for {
+            select {
+              case <-ctx.Done():
+                return ctx.Err()
+              case dst <- n:
+                n++
+            }
+          }
+        ```
+      - context.WithTImeout()
+      - context.WithDeadline()
+    * The derived context is passed to child goroutines to facilitate their cancellation
 
 # Http Server Timeouts with Context package
 
