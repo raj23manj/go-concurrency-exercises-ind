@@ -1262,7 +1262,24 @@ Go's concurrency ToolSet
           }
         ```
       - context.WithTImeout()
+      ```
+        duration := 5*time.Millisecond
+        ctx, cancel := context.WithTimeout(context.Background(), duration)
+        defer cancel()
+
+        * WithTimeout() takes parent context and time duration as input
+        * WithTimeout returns a new Context that closes its done channel after the given timeout duration
+        * WithTimeout() is useful for setting a deadline on the requests to backend servers
+      ```
       - context.WithDeadline()
+      ```
+        deadline := time.Now().Add(5*time.Millisecond)
+        ctx, cancel := context.WIthDeadline(context.Background(), deadline)
+        defer cancel()
+
+        * WithDeadline() takes parent context and clock time as input
+        * withDeadline returns a new Context that closes its done channel when the machines clock advances past the given deadline
+      ```
     * The derived context is passed to child goroutines to facilitate their cancellation
 
 # Http Server Timeouts with Context package
