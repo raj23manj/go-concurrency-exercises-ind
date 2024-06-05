@@ -1260,8 +1260,48 @@ Go's concurrency ToolSet
                 n++
             }
           }
+
+          complete example:
+
+          func main() {
+
+            // TODO: gen generates integers in a separate goroutine and
+            // sends them to the returned channel.
+            // The callers of gen need to cancel the context once
+            // they consume 5 integers
+            // so that internal goroutine
+            // started by gen is not leaked.
+            gen := func(ctx context.Context) <-chan int {
+              dst := make(chan int)
+              n := 1
+              go func() {
+                defer close(dst)
+                for {
+                  select {
+                  case <-ctx.Done():
+                    return
+                  case dst <- n:
+                    n++
+                  }
+                }
+              }()
+              return dst
+            }
+
+            // Create a context that is cancellable.
+            ctx, cancel := context.WithCancel(context.Background())
+
+            ch := gen(ctx)
+            for n := range ch {
+              fmt.Println(n)
+              if n == 5 {
+                cancel()
+              }
+            }
+          }
+
         ```
-      - context.WithTImeout()
+      - context.WithTimeout()
       ```
         duration := 5*time.Millisecond
         ctx, cancel := context.WithTimeout(context.Background(), duration)
@@ -1270,6 +1310,38 @@ Go's concurrency ToolSet
         * WithTimeout() takes parent context and time duration as input
         * WithTimeout returns a new Context that closes its done channel after the given timeout duration
         * WithTimeout() is useful for setting a deadline on the requests to backend servers
+
+        * example:
+
+        func main() {
+
+            // set a timeout for http get operation.
+            req, err := http.NewRequest("GET", "https://andcloud.io", nil)
+            if err != nil {
+              log.Fatal(err)
+            }
+
+            // Create a context with a timeout of 100 milliseconds.
+            ctx, cancel := context.WithTimeout(req.Context(), 100*time.Millisecond)
+            defer cancel()
+
+            // Bind the new context into the request.
+            req = req.WithContext(ctx)
+
+            resp, err := http.DefaultClient.Do(req)
+            if err != nil {
+              log.Println("ERROR:", err)
+              return
+            }
+
+            // Close the response body on the return.
+            defer resp.Body.Close()
+
+            // Write the response to stdout.
+            io.Copy(os.Stdout, resp.Body)
+          }
+
+
       ```
       - context.WithDeadline()
       ```
@@ -1279,9 +1351,106 @@ Go's concurrency ToolSet
 
         * WithDeadline() takes parent context and clock time as input
         * withDeadline returns a new Context that closes its done channel when the machines clock advances past the given deadline
+
+        example:
+
+        func main() {
+
+          // set deadline for goroutine to return computational result.
+          deadline := time.Now().Add(5 * time.Millisecond)
+          ctx, cancel := context.WithDeadline(context.Background(), deadline)
+          defer cancel()
+
+          compute := func() <-chan data {
+            ch := make(chan data)
+            go func() {
+              defer close(ch)
+
+              deadline, ok := ctx.Deadline()
+              if ok {
+                if deadline.Sub(time.Now().Add(50*time.Millisecond)) < 0 {
+                  fmt.Println("not sufficient time given, terminating")
+                  return
+                }
+              }
+
+              // Simulate work.
+              time.Sleep(50 * time.Millisecond)
+
+              // Report result.
+              select {
+              case ch <- data{"123"}:
+              case <-ctx.Done():
+                fmt.Println("work cancelled")
+                return
+              }
+
+            }()
+            return ch
+          }
+
+          // Wait for the work to finish. If it takes too long move on.
+
+          ch := compute()
+          d, ok := <-ch
+          if ok {
+            fmt.Println("work complete", d)
+          }
+
+        }
+
       ```
     * The derived context is passed to child goroutines to facilitate their cancellation
 
+  * Context Package as Data Bag
+    * Context package can be used to transport request-scoped data down the call graph
+    * context.WithValue() provides a way to associate request scoped values with a Context
+    * WithValue() takes a parent context and a key value pair as input and returns a copy of the parent context with the key-pair values
+    * ctx.Value() is used to extract data from the context
+    ```
+      example:
+
+      type userIDKey string
+      type database map[string]bool
+
+      var db database = database{
+        "jane": true,
+      }
+
+      func main() {
+        ctx, cancel := context.WithCancel(context.Background())
+        defer cancel()
+        processRequest(ctx, "jane")
+      }
+
+      func processRequest(ctx context.Context, userid string) {
+        // send userID information to checkMemberShipStatus for
+        // database lookup.
+        vctx := context.WithValue(ctx,
+          userIDKey("userIDKey"),
+          userid)
+
+        ch := checkMemberShipStatus(vctx)
+        status := <-ch
+        fmt.Printf("membership status of userid : %s : %v\n", userid, status)
+      }
+
+      // checkMemberShipStatus - takes context as input.
+      // extracts the user id information from context.
+      // spins a goroutine to do database lookup
+      // sends the result on the returned channel.
+      func checkMemberShipStatus(ctx context.Context) <-chan bool {
+        ch := make(chan bool)
+        go func() {
+          defer close(ch)
+          // do some database lookup
+          userid := ctx.Value(userIDKey("userIDKey")).(string)
+          status := db[userid]
+          ch <- status
+        }()
+        return ch
+      }
+    ```
 # Http Server Timeouts with Context package
 
 # Interfaces
