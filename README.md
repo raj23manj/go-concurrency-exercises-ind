@@ -1451,6 +1451,44 @@ Go's concurrency ToolSet
         return ch
       }
     ```
+
+  * Go Idioms for COntext Package
+    * Incoming requests to a server should create a context
+      - create context early in processing task or request
+      - create a top level context
+        func main () {
+          ctx := context.Background()
+        }
+      - http.Request value already contains a Context
+      func handleFunc(w http.ResponseWriter, req *http.Request) {
+        ctx, cancel = context.WithCancel(req.Context())
+      }
+    * Outgoing calls to servers should accept a context
+      - Higher level calls need to tell lower level calls how long they are willing to wait
+
+      // create a context with a timeout of 100 milliseconds.
+      ctx, cance := context.WIthTimeout(req.Context(), 100*time.Millisecond)
+      defer cancel()
+
+      // Bind the new context into the request
+      req = req.WIthContext(ctx)
+
+      // Do will handle the context level timeout
+      resp, err := http.DefaultClient.Do(req)
+
+    * Pass aContext to function performing I/O
+      - Any function that is performing I/O should accept a context value as its first parameter and respect any timeout or deadline configured by the caller
+      - Any API's that takes a Context, the idiom is to have the first parameter accept the context value
+    * Any change to a context value create a new context value that i then propogated forward. The functions that are passed with the new context are affected and not the old functions
+
+    * When a Context is cancelled, all context derived from it are also canceled
+      - if a parent context is cancelled, all children derived by that parent context are also canceled
+    * Use TODO context if you are unsure about which context to use
+      - if a function is not responsible for creating top level context
+      - we need a temp top-level context until we figured out where the actual context will come from
+    * Use context values only for request-scoped data
+      - Do not use the context value to pass data into a function which becomes essential for its successful execution
+      - A function should able to execute its logic with an empty Context Value.
 # Http Server Timeouts with Context package
 
 # Interfaces
