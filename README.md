@@ -1490,6 +1490,7 @@ Go's concurrency ToolSet
       - Do not use the context value to pass data into a function which becomes essential for its successful execution
       - A function should able to execute its logic with an empty Context Value.
 # Http Server Timeouts with Context package
+  - to timeout request after a specific time
 
 # Interfaces
 
